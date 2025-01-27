@@ -168,6 +168,14 @@
         #acceptBtn:hover {
             background-color: #0056b3;
         }
+
+        /* Estilos para el iframe del formulario */
+        #formIframe {
+            display: none;
+            width: 100%;
+            height: calc(100vh - 60px); /* Ajusta la altura según sea necesario */
+            border: none;
+        }
     </style>
 </head>
 
@@ -187,7 +195,7 @@
             <option value="https://forms.gle/YGKAfNeWnSoTYdHi9">Formulario 1</option>
             <option value="https://docs.google.com/forms/d/e/1FAIpQLSfUZhyGmJrT3pf79K6TDjPayq3M5MVrERisE2aSgJFA7vRulA/viewform?usp=header">Formulario 2</option>
             <option value="https://forms.gle/Bmcm5vtANv4Nz2ZA6">Formulario 3</option>
-            <option value="https://docs.google.com/forms/d/e/1FAIpQLSfD2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2/viewform?usp=sharing">Formulario 4</option>
+            <option value="https://docs.google.com/forms/d/e/1FAIpQLSfD2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2/viewform?usp=sharing">Formulario 4</option>
             <!-- Agrega más opciones según sea necesario -->
         </select>
         <button id="acceptBtn">Aceptar</button>
@@ -204,12 +212,14 @@
         <p>Acción no permitida registrada</p>
     </div>
 
+    <!-- Iframe para mostrar el formulario -->
+    <iframe id="formIframe"></iframe>
+
     <script>
         let exitTimer;
         let timeLeft = 8;
         let isWarningVisible = false;
         let isBlocked = false;
-        let formWindow = null;
         let formURL = null;
 
         let actionCounter = parseInt(localStorage.getItem('actionCounter')) || 0;
@@ -358,79 +368,30 @@
                 });
             }
         });
+
         document.getElementById('fullScreenBtn').addEventListener('click', function () {
             this.style.opacity = '0';
             setTimeout(() => {
                 this.style.display = 'none';
             }, 500);
-             // Open the form in a new window/tab
-            openFormInNewTab();
+            // Mostrar el iframe con el formulario
+            showFormIframe();
         });
+
         document.getElementById('exitFullScreenBtn').addEventListener('click', function () {
-        // Open the form in a new window/tab
-             openFormInNewTab();
+            // Mostrar el iframe con el formulario
+            showFormIframe();
         });
 
-         function openFormInNewTab() {
-        if (formURL) {
-            formWindow = window.open(formURL, '_blank');
-
-            // Evento para detectar cuando se cierra la nueva pestaña
-            const newTabClosed = function () {
-                if (!formWindow || formWindow.closed) {
-                    // La nueva pestaña ha sido cerrada, activar el modal
-                    updateActionCounter('Has cerrado la ventana');
-                    if (!isWarningVisible && !isBlocked) {
-                        isWarningVisible = true;
-                        document.getElementById('blockModal').style.display = 'block';
-                        exitTimer = setInterval(function () {
-                            if (timeLeft > 0) {
-                                timeLeft--;
-                                document.getElementById('timer').textContent = timeLeft;
-                                document.title = `Regresa en ${timeLeft} segundos`;
-                            } else {
-                                clearInterval(exitTimer);
-                                alert('La prueba se ha bloqueado.');
-                                isBlocked = true;
-                                window.location.replace('about:blank');
-                            }
-                        }, 1000);
-                    }
-                    // Eliminar el listener después de ejecutarlo
-                    window.removeEventListener('blur', newTabClosed);
-                }
-             };
-            window.addEventListener('blur', newTabClosed);
-
-             if(formWindow){
-              // En la nueva pestaña
-              formWindow.addEventListener('DOMContentLoaded', function() {
-                   formWindow.document.addEventListener('contextmenu', function(e) {
-                       e.preventDefault();
-                       updateActionCounter('Clic derecho no permitido');
-                   });
-
-                   formWindow.addEventListener("beforeunload", function (event) {
-                       event.preventDefault();
-                       event.returnValue = "";
-                       updateActionCounter('Has intentado recargar la página');
-                     });
-
-                     formWindow.history.replaceState(null, "", location.href);
-                     formWindow.addEventListener("popstate", function () {
-                       formWindow.history.replaceState(null, "", location.href);
-                       updateActionCounter('Intento de volver atras');
-                       formWindow.alert("No puedes volver atrás en esta página.");
-                     });
-                     formWindow.document.addEventListener('keydown', handleKeydown);
-                   })
-            }
-
-            }else{
-               alert('Porfavor selecciona un formulario.')
+        function showFormIframe() {
+            if (formURL) {
+                const formIframe = document.getElementById('formIframe');
+                formIframe.src = formURL;
+                formIframe.style.display = 'block';
+            } else {
+                alert('Por favor selecciona un formulario.');
             }
         }
-
 
         document.getElementById('actionCounter').textContent = `Acciones no permitidas: ${actionCounter}`;
 
