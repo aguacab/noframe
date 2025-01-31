@@ -10,54 +10,73 @@
             padding: 0;
             overflow: hidden; /* Evita el scroll */
             font-family: Arial, sans-serif;
+            background-color: purple; /* Cambia el fondo fuera del formulario a color purpura */
         }
         #form-container {
             width: 100vw;
-            height: 100vh;
+            height: calc(100vh - 40px); /* Ajusta la altura para dejar espacio al contador */
             display: flex;
             justify-content: center;
             align-items: center;
+            background-color: white; /* Fondo blanco dentro del contenedor del formulario */
         }
         iframe {
             width: 90%;
             height: 90%;
             border: none;
         }
-        #warning-notification {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: red;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: none;
-            z-index: 1000;
-        }
         #actions-counter {
             position: fixed;
-            bottom: 10px;
-            right: 10px;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
             background-color: rgba(0, 0, 0, 0.7);
             color: white;
-            padding: 10px;
-            border-radius: 5px;
             z-index: 1000;
+        }
+        #warning-notification {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: red;
+            color: white;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            z-index: 1001;
+        }
+        #warning-message {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        #countdown {
+            margin-top: 20px;
+            font-size: 2em;
         }
     </style>
 </head>
 <body>
+    <div id="actions-counter">Acciones no permitidas: 0</div>
     <div id="form-container">
         <iframe id="google-form" src="about:blank"></iframe>
     </div>
 
     <!-- Elemento para mostrar advertencias -->
-    <div id="warning-notification">No está permitido abandonar esta página.</div>
-    
-    <!-- Elemento para mostrar el contador de acciones no permitidas -->
-    <div id="actions-counter">Acciones no permitidas: 0</div>
+    <div id="warning-notification">
+        <div id="warning-message">
+            <div>No está permitido abandonar esta página.</div>
+            <div id="countdown">8</div>
+        </div>
+    </div>
 
     <script>
         // Inicializar contador de acciones no permitidas desde localStorage
@@ -66,13 +85,33 @@
         // Mostrar el contador de acciones no permitidas en la consola al iniciar
         console.log(`Total de acciones no permitidas: ${forbiddenActionsCount}`);
 
+        // Función para actualizar el contador de acciones no permitidas en la interfaz de usuario
+        function updateCounterDisplay() {
+            const actionsCounter = document.getElementById('actions-counter');
+            actionsCounter.textContent = `Acciones no permitidas: ${forbiddenActionsCount}`;
+        }
+
         // Función para mostrar una advertencia en la pantalla
         function showWarning() {
             const warningNotification = document.getElementById('warning-notification');
-            warningNotification.style.display = 'block';
-            setTimeout(() => {
-                warningNotification.style.display = 'none';
-            }, 3000); // Ocultar la advertencia después de 3 segundos
+            warningNotification.style.display = 'flex';
+            countdownTimer(); // Inicia la cuenta regresiva
+        }
+
+        // Función para iniciar la cuenta regresiva
+        function countdownTimer() {
+            let secondsRemaining = 8;
+            const countdownElement = document.getElementById('countdown');
+
+            const intervalId = setInterval(() => {
+                countdownElement.textContent = secondsRemaining;
+                secondsRemaining--;
+
+                if (secondsRemaining < 0) {
+                    clearInterval(intervalId);
+                    window.location.href = 'about:blank'; // Redirige a una página en blanco
+                }
+            }, 1000);
         }
 
         // Bloquear navegación fuera de la página
@@ -125,21 +164,7 @@
         const formIframe = document.getElementById('google-form');
         formIframe.src = googleFormUrl;
 
-        // Función para manejar la autenticación si es necesaria
-        async function handleAuthentication() {
-            // Aquí puedes agregar lógica de autenticación si es necesaria
-            // Por ejemplo, redirigir a una página de inicio de sesión antes de cargar el formulario
-        }
-
-        // Llamar a la función de autenticación si es necesaria
-        handleAuthentication();
-
         // Actualización periódica del contador en la interfaz de usuario
-        function updateCounterDisplay() {
-            const actionsCounter = document.getElementById('actions-counter');
-            actionsCounter.textContent = `Acciones no permitidas: ${forbiddenActionsCount}`;
-        }
-
         setInterval(updateCounterDisplay, 1000); // Actualiza cada segundo
         updateCounterDisplay(); // Actualizar inmediatamente al cargar la página
     </script>
