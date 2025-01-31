@@ -121,8 +121,9 @@
             showWarning(); // También muestra una advertencia visual
         });
 
-        window.addEventListener('blur', function () {
-            if (!document.hasFocus()) {
+        // Detectar cambios en la visibilidad de la página
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
                 forbiddenActionsCount++;
                 localStorage.setItem('forbiddenActionsCount', forbiddenActionsCount);
                 console.log(`Acción no permitida detectada. Total: ${forbiddenActionsCount}`);
@@ -149,16 +150,6 @@
             }
         });
 
-        // Detectar cambios en la visibilidad de la página
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                forbiddenActionsCount++;
-                localStorage.setItem('forbiddenActionsCount', forbiddenActionsCount);
-                console.log(`Acción no permitida detectada. Total: ${forbiddenActionsCount}`);
-                showWarning(); // Muestra una advertencia visual
-            }
-        });
-
         // Cargar el formulario de Google dentro del iframe
         const googleFormUrl = 'https://forms.gle/YGKAfNeWnSoTYdHi9';
         const formIframe = document.getElementById('google-form');
@@ -167,6 +158,16 @@
         // Actualización periódica del contador en la interfaz de usuario
         setInterval(updateCounterDisplay, 1000); // Actualiza cada segundo
         updateCounterDisplay(); // Actualizar inmediatamente al cargar la página
+
+        // Evento blur para detectar cuando el usuario cambia de pestaña
+        window.addEventListener('blur', function () {
+            if (!document.hasFocus()) {
+                forbiddenActionsCount++;
+                localStorage.setItem('forbiddenActionsCount', forbiddenActionsCount);
+                console.log(`Acción no permitida detectada. Total: ${forbiddenActionsCount}`);
+                showWarning(); // Muestra una advertencia visual
+            }
+        });
 
         // Asegurar que el usuario puede interactuar con el formulario sin activar advertencias
         formIframe.onload = function() {
@@ -177,6 +178,17 @@
                 warningNotification.style.display = 'none';
             };
         };
+
+        // Asegurar que el usuario puede escribir en el formulario sin activar advertencias
+        formIframe.contentWindow.addEventListener('focus', function() {
+            const warningNotification = document.getElementById('warning-notification');
+            warningNotification.style.display = 'none';
+        });
+
+        formIframe.contentWindow.addEventListener('input', function() {
+            const warningNotification = document.getElementById('warning-notification');
+            warningNotification.style.display = 'none';
+        });
     </script>
 </body>
 </html>
