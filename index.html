@@ -167,6 +167,16 @@
         // Actualización periódica del contador en la interfaz de usuario
         setInterval(updateCounterDisplay, 1000); // Actualiza cada segundo
         updateCounterDisplay(); // Actualizar inmediatamente al cargar la página
+
+        // Asegurar que el usuario puede interactuar con el formulario sin activar advertencias
+        formIframe.onload = function() {
+            const iframeDocument = formIframe.contentWindow.document;
+            iframeDocument.body.onfocus = function() {
+                // Si el usuario vuelve a enfocarse en el formulario, ocultar cualquier advertencia
+                const warningNotification = document.getElementById('warning-notification');
+                warningNotification.style.display = 'none';
+            };
+        };
     </script>
 </body>
 </html>
