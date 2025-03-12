@@ -1,206 +1,179 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cuestionario Restringido</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoreo de Focus - Página Principal</title>
     <style>
-        /* Estilos generales */
         body {
+            display: flex;
+            height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
-            background: linear-gradient(90deg, #ff7eb3, #8b5cf6);
-            color: #fff;
-            text-align: center;
-            overflow: hidden;
-            user-select: auto !important; /* Permitir selección */
-            -webkit-user-select: auto !important;
-            -ms-user-select: auto !important;
-            touch-action: auto !important; /* Permitir gestos */
+            background-color: #f8f9fa;
         }
 
-        iframe {
-            width: 100%;
-            height: 80vh;
-            border: none;
-            margin-top: 20px;
-            pointer-events: auto !important; /* Permitir interacciones */
+        .container {
+            display: flex;
+            flex: 1;
         }
 
-        #blockModal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 0, 0, 0.9);
-            color: white;
-            text-align: center;
+        /* Área principal para el iframe */
+        .formulario-area {
+            flex: 3;
+            height: 100vh;
+        }
+
+        /* Lateral para el historial */
+        .historial-area {
+            width: 300px;
+            background-color: #ffffff;
             padding: 20px;
-            font-size: 24px;
-            z-index: 9999;
+            border-left: 2px solid #ddd;
+            overflow-y: auto;
+            height: 100vh;
         }
 
-        /* Deshabilitar selección de imágenes */
-        img {
-            pointer-events: none;
+        .historial-item {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
         }
 
-        /* Contador de acciones no permitidas */
-        #actionCounter {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
+        .boton {
+            margin-top: 40px;
             color: white;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 1000;
+            background: green;
+            padding: 10px 20px;
+            cursor: pointer;
+            display: none;
+ 
+
         }
+
+        .borrar-btn {
+            margin-top: 20px;
+            padding: 8px 12px;
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            display: none;
+        }
+
+        /* Estilo para el mensaje de regreso con fondo verde fluorescente y texto rojo */
+        .regreso {
+            color: black; /* Texto en rojo */
+            background-color: #00FF00; /* Fondo verde fluorescente */
+            padding: 8px;
+            border-radius: 5px;
+        }
+        .salida {
+        color: red;
+    }
     </style>
 </head>
 <body>
 
-<!-- Contador de acciones no permitidas -->
-<div id="actionCounter">Acciones no permitidas: 0</div>
+    <div class="container">
+        <!-- Área del iframe (formulario de Google) -->
+        <div class="formulario-area">
+            <iframe id="formularioIframe" src="https://forms.gle/UdjYrPZnn8E8CF786" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
 
-<!-- Formulario de Google incrustado -->
-<iframe 
-    id="googleForm"
-    src="https://forms.gle/jxD4qo1NfJwZ87z1A"
-    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture">
-</iframe>
+        <!-- Área del historial -->
+        <div class="historial-area">
+            <h2>Historial</h2>
+            <p>Registro de formulario.</p>
+            <div id="historial"></div>
+            <button class="borrar-btn" onclick="borrarHistorial()">Borrar Historial</button>
+        </div>
+    </div>
 
-<!-- Modal de advertencia -->
-<div id="blockModal">
-    <p><h1>Has salido de la ventana.</h1></p>  
-    <p><h1>Regresa en <span id="timer">8</span> segundos o la prueba se bloqueará.</h1></p>
-    <p>Acción no permitida registrada</p>
-</div>
 
-<script>
-    let exitTimer;
-    let timeLeft = 8;
-    let isWarningVisible = false;
+    <script>
+        let iframe = document.getElementById('formularioIframe');
+        let historialDiv = document.getElementById('historial');
 
-    let actionCounter = parseInt(localStorage.getItem('actionCounter')) || 0;
-    localStorage.setItem('lastTimestamp', Date.now());
+        // Función para registrar los eventos de cambio de foco
+        function registrarEvento(evento) {
+            const timestamp = new Date().toLocaleString();
+            let mensaje = "";
 
-    function updateActionCounter() {
-        actionCounter++;
-        localStorage.setItem('actionCounter', actionCounter);
-        document.getElementById('actionCounter').textContent = `Acciones no permitidas: ${actionCounter}`;
-        if (actionCounter % 6 === 0) {
-            window.location.replace('about:blank');
-        }
-    }
-
-    function handleKeydown(e) {
-        const forbiddenKeys = ['F11', 'Escape', 'Backspace', 'PrintScreen'];
-
-        if (e.key !== 'Tab' && forbiddenKeys.includes(e.key)) {
-            e.preventDefault();
-            updateActionCounter();
-        }
-    }
-
-    document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        updateActionCounter();
-    });
-
-    document.addEventListener('keydown', handleKeydown);
-
-    function handleVisibilityChange() {
-        if (document.hidden || document.webkitHidden) {
-            updateActionCounter();
-            if (!isWarningVisible) {
-                isWarningVisible = true;
-                document.getElementById('blockModal').style.display = 'block';
-                exitTimer = setInterval(function() {
-                    if (timeLeft > 0) {
-                        timeLeft--;
-                        document.getElementById('timer').textContent = timeLeft;
-                        document.title = `Regresa en ${timeLeft} segundos`;
-                    } else {
-                        clearInterval(exitTimer);
-                        alert('La prueba se ha bloqueado.');
-                        window.location.replace('about:blank');
-                    }
-                }, 1000);
+            if (evento === "focus") {
+                mensaje = "Volvió a la página del formulario.";
+            } else if (evento === "blur") {
+                mensaje = "Salió de la página del formulario.";
+            } else if (evento === "regreso") {
+                mensaje = "Regresó a la página del formulario.";
             }
-        } else {
-            if (isWarningVisible) {
-                isWarningVisible = false;
-                clearInterval(exitTimer);
-                timeLeft = 8;
-                document.getElementById('timer').textContent = timeLeft;
-                document.getElementById('blockModal').style.display = 'none';
-                document.title = 'Cuestionario Restringido';
+
+            // Obtener historial del localStorage o crear un nuevo array
+            let historial = JSON.parse(localStorage.getItem("focusHistorial")) || [];
+
+            // Agregar la nueva entrada al historial
+            historial.push({ evento: mensaje, fecha: timestamp });
+
+            // Guardar el historial en localStorage
+            localStorage.setItem("focusHistorial", JSON.stringify(historial));
+
+            // Mostrar el historial actualizado
+            mostrarHistorial();
+        }
+
+        // Función para mostrar el historial
+        function mostrarHistorial() {
+            let historial = JSON.parse(localStorage.getItem("focusHistorial")) || [];
+            historialDiv.innerHTML = ""; // Limpiar el historial previo
+
+            // Mostrar los elementos del historial
+            historial.forEach(item => {
+                let div = document.createElement("div");
+                div.classList.add("historial-item");
+
+                // Si es el evento "regreso", se agrega la clase "regreso" para hacerlo rojo con fondo verde fluorescente
+                if (item.evento.includes("Regresó")) {
+                    div.classList.add("regreso");
+                }
+
+                // Si es el evento "Salió de la página del formulario.", se agrega la clase "salida" para hacerlo rojo
+                if (item.evento.includes("Salió")) {
+                    div.classList.add("salida");
+                }
+
+                div.textContent = `${item.fecha}: ${item.evento}`;
+                historialDiv.appendChild(div);
+            });
+        }
+
+        // Función para borrar el historial
+        function borrarHistorial() {
+            localStorage.removeItem("focusHistorial");
+            mostrarHistorial(); // Vuelve a mostrar el historial vacío
+        }
+
+     
+        // Detectar cuándo el iframe pierde o gana el foco
+        window.addEventListener("focus", function () {
+            // Verificar si el iframe está en foco
+            if (document.activeElement === iframe) {
+                registrarEvento("focus"); // Registra "Volvió a la página del formulario."
+            } else {
+                registrarEvento("regreso"); // Registra "Regresó a la página del formulario."
             }
-        }
-    }
+        });
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    document.addEventListener('webkitvisibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleVisibilityChange);
-
-    document.addEventListener('wheel', function(e) {
-        if (e.ctrlKey) {
-            e.preventDefault();
-            updateActionCounter();
-        }
-    }, { passive: false });
-
-    document.addEventListener('touchmove', function(e) {
-        if (e.touches.length > 2) {
-            e.preventDefault();
-            updateActionCounter();
-        }
-    }, { passive: false });
-
-    window.addEventListener("beforeunload", function (event) {
-        event.preventDefault();
-        event.returnValue = "";
-        updateActionCounter();
-    });
-
-    history.replaceState(null, "", location.href);
-    window.addEventListener("popstate", function () {
-        history.replaceState(null, "", location.href);
-        alert("No puedes volver atrás en esta página.");
-        updateActionCounter();
-    });
-
-    document.addEventListener("DOMContentLoaded", function() {
-        function requestFullScreen() {
-            const element = document.documentElement;
-            if (element.webkitRequestFullscreen) {
-                element.webkitRequestFullscreen();
-            } else if (element.requestFullscreen) {
-                element.requestFullscreen();
+        window.addEventListener("blur", function () {
+            // Verificar si el iframe ha perdido el foco
+            if (document.activeElement !== iframe) {
+                registrarEvento("blur"); // Registra "Salió de la página del formulario."
             }
-        }
+        });
 
-        requestFullScreen();
-        document.addEventListener('click', requestFullScreen);
-        document.addEventListener('touchstart', requestFullScreen);
-    });
+        // Mostrar historial al cargar la página
+        window.onload = mostrarHistorial;
+    </script>
 
-    function handleFullScreenChange() {
-        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-            updateActionCounter();
-        }
-    }
-
-    document.addEventListener('fullscreenchange', handleFullScreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
-
-    document.getElementById('actionCounter').textContent = `Acciones no permitidas: ${actionCounter}`;
-</script>
-<footer>
-    <p>No se permite tener otras pestañas o ventanas, ni realizar capturas ni salir de la pantalla de la prueba. Cualquier incumplimiento conlleva la anulación de la prueba.</p>
-</footer>
 </body>
 </html>
+
