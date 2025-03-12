@@ -1,194 +1,206 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario Restringido</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cuestionario Restringido</title>
     <style>
+        /* Estilos generales */
         body {
             margin: 0;
-            padding: 0;
-            overflow: hidden; /* Evita el scroll */
             font-family: Arial, sans-serif;
-            background-color: purple; /* Cambia el fondo fuera del formulario a color purpura */
-        }
-        #form-container {
-            width: 100vw;
-            height: calc(100vh - 40px); /* Ajusta la altura para dejar espacio al contador */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: white; /* Fondo blanco dentro del contenedor del formulario */
-        }
-        iframe {
-            width: 90%;
-            height: 90%;
-            border: none;
-        }
-        #actions-counter {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 40px;
-            line-height: 40px;
+            background: linear-gradient(90deg, #ff7eb3, #8b5cf6);
+            color: #fff;
             text-align: center;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            z-index: 1000;
+            overflow: hidden;
+            user-select: auto !important; /* Permitir selección */
+            -webkit-user-select: auto !important;
+            -ms-user-select: auto !important;
+            touch-action: auto !important; /* Permitir gestos */
         }
-        #warning-notification {
+
+        iframe {
+            width: 100%;
+            height: 80vh;
+            border: none;
+            margin-top: 20px;
+            pointer-events: auto !important; /* Permitir interacciones */
+        }
+
+        #blockModal {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: red;
+            background-color: rgba(255, 0, 0, 0.9);
             color: white;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            font-size: 2em;
-            z-index: 1001;
-        }
-        #warning-message {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
             text-align: center;
+            padding: 20px;
+            font-size: 24px;
+            z-index: 9999;
         }
-        #countdown {
-            margin-top: 20px;
-            font-size: 2em;
+
+        /* Deshabilitar selección de imágenes */
+        img {
+            pointer-events: none;
+        }
+
+        /* Contador de acciones no permitidas */
+        #actionCounter {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
         }
     </style>
 </head>
 <body>
-    <div id="actions-counter">Acciones no permitidas: 0</div>
-    <div id="form-container">
-        <iframe id="google-form" src="about:blank"></iframe>
-    </div>
 
-    <!-- Elemento para mostrar advertencias -->
-    <div id="warning-notification">
-        <div id="warning-message">
-            <div>No está permitido abandonar esta página.</div>
-            <div id="countdown">8</div>
-        </div>
-    </div>
+<!-- Contador de acciones no permitidas -->
+<div id="actionCounter">Acciones no permitidas: 0</div>
 
-    <script>
-        // Inicializar contador de acciones no permitidas desde localStorage
-        let forbiddenActionsCount = parseInt(localStorage.getItem('forbiddenActionsCount')) || 0;
+<!-- Formulario de Google incrustado -->
+<iframe 
+    id="googleForm"
+    src="https://forms.gle/tw8bZcfx6P4zYHkH7"
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture">
+</iframe>
 
-        // Mostrar el contador de acciones no permitidas en la consola al iniciar
-        console.log(`Total de acciones no permitidas: ${forbiddenActionsCount}`);
+<!-- Modal de advertencia -->
+<div id="blockModal">
+    <p><h1>Has salido de la ventana.</h1></p>  
+    <p><h1>Regresa en <span id="timer">8</span> segundos o la prueba se bloqueará.</h1></p>
+    <p>Acción no permitida registrada</p>
+</div>
 
-        // Función para actualizar el contador de acciones no permitidas en la interfaz de usuario
-        function updateCounterDisplay() {
-            const actionsCounter = document.getElementById('actions-counter');
-            actionsCounter.textContent = `Acciones no permitidas: ${forbiddenActionsCount}`;
+<script>
+    let exitTimer;
+    let timeLeft = 8;
+    let isWarningVisible = false;
+
+    let actionCounter = parseInt(localStorage.getItem('actionCounter')) || 0;
+    localStorage.setItem('lastTimestamp', Date.now());
+
+    function updateActionCounter() {
+        actionCounter++;
+        localStorage.setItem('actionCounter', actionCounter);
+        document.getElementById('actionCounter').textContent = `Acciones no permitidas: ${actionCounter}`;
+        if (actionCounter % 6 === 0) {
+            window.location.replace('about:blank');
         }
+    }
 
-        // Función para mostrar una advertencia en la pantalla
-        function showWarning() {
-            const warningNotification = document.getElementById('warning-notification');
-            warningNotification.style.display = 'flex';
-            countdownTimer(); // Inicia la cuenta regresiva
-        }
+    function handleKeydown(e) {
+        const forbiddenKeys = ['F11', 'Escape', 'Backspace', 'PrintScreen'];
 
-        // Función para iniciar la cuenta regresiva
-        function countdownTimer() {
-            let secondsRemaining = 8;
-            const countdownElement = document.getElementById('countdown');
-
-            const intervalId = setInterval(() => {
-                countdownElement.textContent = secondsRemaining;
-                secondsRemaining--;
-
-                if (secondsRemaining < 0) {
-                    clearInterval(intervalId);
-                    window.location.href = 'about:blank'; // Redirige a una página en blanco
-                }
-            }, 1000);
-        }
-
-        // Bloquear navegación fuera de la página
-        window.addEventListener('beforeunload', function (e) {
+        if (e.key !== 'Tab' && forbiddenKeys.includes(e.key)) {
             e.preventDefault();
-            e.returnValue = ''; // Esto mostrará un mensaje de advertencia al usuario
-            showWarning(); // También muestra una advertencia visual
-        });
+            updateActionCounter();
+        }
+    }
 
-        // Detectar cambios en la visibilidad de la página
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                forbiddenActionsCount++;
-                localStorage.setItem('forbiddenActionsCount', forbiddenActionsCount);
-                console.log(`Acción no permitida detectada. Total: ${forbiddenActionsCount}`);
-                showWarning(); // Muestra una advertencia visual
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        updateActionCounter();
+    });
+
+    document.addEventListener('keydown', handleKeydown);
+
+    function handleVisibilityChange() {
+        if (document.hidden || document.webkitHidden) {
+            updateActionCounter();
+            if (!isWarningVisible) {
+                isWarningVisible = true;
+                document.getElementById('blockModal').style.display = 'block';
+                exitTimer = setInterval(function() {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        document.getElementById('timer').textContent = timeLeft;
+                        document.title = `Regresa en ${timeLeft} segundos`;
+                    } else {
+                        clearInterval(exitTimer);
+                        alert('La prueba se ha bloqueado.');
+                        window.location.replace('about:blank');
+                    }
+                }, 1000);
             }
-        });
-
-        // Detección y prevención de combinaciones de teclas comunes para abrir herramientas de desarrollo
-        window.addEventListener('keydown', function (e) {
-            if (e.key === 'F12' || 
-                (e.ctrlKey && e.shiftKey && e.key === 'I') || 
-                (e.ctrlKey && e.shiftKey && e.key === 'J') || 
-                (e.ctrlKey && e.key === 'u') ||
-                (e.metaKey && e.key === 'n') || // Nueva pestaña en macOS
-                (e.ctrlKey && e.key === 't') || // Nueva pestaña en Windows/Linux
-                (e.ctrlKey && e.key === 'w') || // Cerrar pestaña en Windows/Linux
-                (e.metaKey && e.key === 'w')    // Cerrar pestaña en macOS
-            ) {
-                forbiddenActionsCount++;
-                localStorage.setItem('forbiddenActionsCount', forbiddenActionsCount);
-                console.log(`Acción no permitida detectada. Total: ${forbiddenActionsCount}`);
-                showWarning(); // Muestra una advertencia visual
-                e.preventDefault();
+        } else {
+            if (isWarningVisible) {
+                isWarningVisible = false;
+                clearInterval(exitTimer);
+                timeLeft = 8;
+                document.getElementById('timer').textContent = timeLeft;
+                document.getElementById('blockModal').style.display = 'none';
+                document.title = 'Cuestionario Restringido';
             }
-        });
+        }
+    }
 
-        // Cargar el formulario de Google dentro del iframe
-        const googleFormUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSezcRH6DlVvpP5Kn-fhGcY8hgPnbyGyJpxgYO7UYygtdAkEEg/viewform?usp=sf_link';
-        const formIframe = document.getElementById('google-form');
-        formIframe.src = googleFormUrl;
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('webkitvisibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleVisibilityChange);
 
-        // Actualización periódica del contador en la interfaz de usuario
-        setInterval(updateCounterDisplay, 1000); // Actualiza cada segundo
-        updateCounterDisplay(); // Actualizar inmediatamente al cargar la página
+    document.addEventListener('wheel', function(e) {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            updateActionCounter();
+        }
+    }, { passive: false });
 
-        // Evento blur para detectar cuando el usuario cambia de pestaña
-        window.addEventListener('blur', function () {
-            if (!document.hasFocus()) {
-                forbiddenActionsCount++;
-                localStorage.setItem('forbiddenActionsCount', forbiddenActionsCount);
-                console.log(`Acción no permitida detectada. Total: ${forbiddenActionsCount}`);
-                showWarning(); // Muestra una advertencia visual
+    document.addEventListener('touchmove', function(e) {
+        if (e.touches.length > 2) {
+            e.preventDefault();
+            updateActionCounter();
+        }
+    }, { passive: false });
+
+    window.addEventListener("beforeunload", function (event) {
+        event.preventDefault();
+        event.returnValue = "";
+        updateActionCounter();
+    });
+
+    history.replaceState(null, "", location.href);
+    window.addEventListener("popstate", function () {
+        history.replaceState(null, "", location.href);
+        alert("No puedes volver atrás en esta página.");
+        updateActionCounter();
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+        function requestFullScreen() {
+            const element = document.documentElement;
+            if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+            } else if (element.requestFullscreen) {
+                element.requestFullscreen();
             }
-        });
+        }
 
-        // Asegurar que el usuario puede interactuar con el formulario sin activar advertencias
-        formIframe.onload = function() {
-            const iframeDocument = formIframe.contentWindow.document;
-            iframeDocument.body.onfocus = function() {
-                // Si el usuario vuelve a enfocarse en el formulario, ocultar cualquier advertencia
-                const warningNotification = document.getElementById('warning-notification');
-                warningNotification.style.display = 'none';
-            };
-        };
+        requestFullScreen();
+        document.addEventListener('click', requestFullScreen);
+        document.addEventListener('touchstart', requestFullScreen);
+    });
 
-        // Asegurar que el usuario puede escribir en el formulario sin activar advertencias
-        formIframe.contentWindow.addEventListener('focus', function() {
-            const warningNotification = document.getElementById('warning-notification');
-            warningNotification.style.display = 'none';
-        });
+    function handleFullScreenChange() {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            updateActionCounter();
+        }
+    }
 
-        formIframe.contentWindow.addEventListener('input', function() {
-            const warningNotification = document.getElementById('warning-notification');
-            warningNotification.style.display = 'none';
-        });
-    </script>
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
+
+    document.getElementById('actionCounter').textContent = `Acciones no permitidas: ${actionCounter}`;
+</script>
+<footer>
+    <p>No se permite tener otras pestañas o ventanas, ni realizar capturas ni salir de la pantalla de la prueba. Cualquier incumplimiento conlleva la anulación de la prueba.</p>
+</footer>
 </body>
 </html>
